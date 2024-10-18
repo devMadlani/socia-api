@@ -28,7 +28,7 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   if (req.body.userId === req.params.id || req.body.isAdmin) {
     try {
-      const user = await User.findByIdAndDelete( req.params.id );
+      const user = await User.findByIdAndDelete(req.params.id);
       res.status(200).json("Account has been deleted");
     } catch (error) {
       res.status(500).json(error);
@@ -46,13 +46,32 @@ router.get("/", async (req, res) => {
     const user = userId
       ? await User.findById(userId)
       : await User.findOne({ username: username });
-      // console.log("user",user);
-      
+    // console.log("user",user);
+
     const { password, updatedAt, ...other } = user._doc;
     res.status(200).json(other);
   } catch (error) {
     res.status(500).send(error);
   }
+});
+//getFrinds
+router.get("/friends/:userId", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    const friends = await Promise.all(
+      user.following.map((friendId) => {
+        return User.findById(friendId);
+      })
+    );
+    let friendList = [];
+    friends.map((friend) => {
+      const { _id, username, profilePicture } = friend;
+
+      friendList.push({ _id, username, profilePicture });
+
+      res.status(200).json(friendList);
+    });
+  } catch (error) {}
 });
 //follow user
 
@@ -64,7 +83,7 @@ router.put("/:id/follow", async (req, res) => {
       if (!user.followers.includes(req.body.userId)) {
         await user.updateOne({ $push: { followers: req.body.userId } });
         await currentUser.updateOne({ $push: { following: req.params.id } });
-        res.status(200).json("user has been follow")
+        res.status(200).json("user has been follow");
       } else {
         res.status(403).json("You already follow");
       }
