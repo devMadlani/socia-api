@@ -11,8 +11,9 @@ const postRoute = require("./routes/posts");
 dotenv.config();
 
 const connectedToMongo = async () => {
+  url = process.env.VITE_MONGO_URL
   try {
-    await mongoose.connect("mongodb://localhost:27017/dev");
+    await mongoose.connect(url);
     console.log("DB connected");
   } catch (error) {
     console.error("Failed to connect to MongoDB", err);
