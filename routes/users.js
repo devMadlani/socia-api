@@ -58,6 +58,7 @@ router.get("/", async (req, res) => {
 router.get("/friends/:userId", async (req, res) => {
   try {
     const user = await User.findById(req.params.userId);
+    console.log(user);
     const friends = await Promise.all(
       user.following.map((friendId) => {
         return User.findById(friendId);
@@ -68,9 +69,9 @@ router.get("/friends/:userId", async (req, res) => {
       const { _id, username, profilePicture } = friend;
 
       friendList.push({ _id, username, profilePicture });
-
-      res.status(200).json(friendList);
     });
+    console.log("friends", friendList);
+    res.status(200).json(friendList);
   } catch (error) {}
 });
 //follow user
