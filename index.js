@@ -14,6 +14,15 @@ const multer = require("multer");
 const path = require("path");
 dotenv.config();
 
+const verifyToken =require("./middelware/authMiddleware")
+
+const corsOptions = {
+  origin: "http://localhost:5173", // Replace with your frontend URL
+  credentials: true, // Allow credentials (cookies) to be sent
+};
+
+// Use the CORS middleware with the specified options
+
 const connectedToMongo = async () => {
   url = process.env.VITE_MONGO_URL;
   try {
@@ -29,7 +38,7 @@ app.use("/images", express.static(path.join(__dirname, "public/images")));
 app.use(express.json());
 app.use(helmet());
 app.use(morgan("common"));
-app.use(cors());
+app.use(cors(corsOptions));
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -49,6 +58,10 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
     console.log(error);
   }
 });
+
+app.get("/api/auth/checkAuth",verifyToken,(req,res)=>{
+  res.status(200).json({user:req.user})
+})
 app.use("/api/users", userRoute);
 app.use("/api/auth", authRoute);
 app.use("/api/posts", postRoute);
