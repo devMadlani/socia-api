@@ -6,23 +6,20 @@ const jwt = require("jsonwebtoken");
 router.post("/register", async (req, res) => {
   try {
     const JWT_SECRET_KEY = process.env.JWT_SECRET;
-    //Generate New Password
     const salt = await bcrypt.genSalt(10);
     const hashPass = await bcrypt.hash(req.body.password, salt);
+
     //Create new user
     const newUser = new User({
       username: req.body.username,
       email: req.body.email,
       password: hashPass,
     });
-
-    //save user and return response
     const user = await newUser.save();
 
     //jwt token
-
-    const token = jwt.sign({ id: user._id }, JWT_SECRET_KEY, {
-      expiresIn: "2h",
+    const token = jwt.sign({ _id: user._id }, JWT_SECRET_KEY, {
+      expiresIn: "1h",
     });
 
     //cookies
@@ -30,9 +27,9 @@ router.post("/register", async (req, res) => {
       httpOnly: true,
       secure: false,
       sameSite: "Strict",
-      maxAge: 7200000,
+      maxAge: 3600000,
     });
-    res.status(201).json({ user , message: "User registered successfully" });
+    res.status(201).json({ user, message: "User registered successfully" });
   } catch (error) {
     res.status(500).json(error);
   }
@@ -41,18 +38,42 @@ router.post("/register", async (req, res) => {
 //login
 
 router.post("/login", async (req, res) => {
+  const JWT_SECRET_KEY = process.env.JWT_SECRET;
+
   try {
     const user = await User.findOne({ email: req.body.email });
-    !user && res.status(404).json("user not found");
+    if (!user) {
+      return res.status(404).json("User not found");
+    }
 
+    console.log(user?._id);
     const validPass = await bcrypt.compare(req.body.password, user.password);
-    console.log(validPass);
-    !validPass && res.status(400).json("wrong password");
+    if (!validPass) {
+      return res.status(400).json("Wrong password");
+    }
 
-    res.status(200).json(user);
+    const token = jwt.sign({ _id: user.id }, JWT_SECRET_KEY, {
+      expiresIn: "1h",
+    });
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: false, // Set to true in production with HTTPS
+      sameSite: "Strict",
+      maxAge: 3600000,
+    });
+
+    res.status(200).json({ user, message: "User logged in successfully" });
   } catch (error) {
-    res.status(500).json({ error: error });
+    res.status(500).json(error);
   }
 });
-
+router.post("/logout", (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: false,
+    sameSite: "Strict",
+  });
+  res.status(200).json({ message: "Logout Successfully" });
+});
 module.exports = router;

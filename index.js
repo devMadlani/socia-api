@@ -12,16 +12,17 @@ const messageRoute = require("./routes/messages");
 const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
+const cookieParser = require("cookie-parser"); 
 dotenv.config();
 
-const verifyToken =require("./middelware/authMiddleware")
+const verifyToken =require("./middelware/authMiddleware");
+const User = require("./models/User");
 
 const corsOptions = {
   origin: "http://localhost:5173", // Replace with your frontend URL
   credentials: true, // Allow credentials (cookies) to be sent
 };
 
-// Use the CORS middleware with the specified options
 
 const connectedToMongo = async () => {
   url = process.env.VITE_MONGO_URL;
@@ -39,6 +40,7 @@ app.use(express.json());
 app.use(helmet());
 app.use(morgan("common"));
 app.use(cors(corsOptions));
+app.use(cookieParser());
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -59,8 +61,10 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
   }
 });
 
-app.get("/api/auth/checkAuth",verifyToken,(req,res)=>{
-  res.status(200).json({user:req.user})
+app.get("/api/auth/checkAuth",verifyToken,async(req,res)=>{
+  console.log("id",req.user._id)
+  const user = await User.findById(req.user._id)
+  res.status(200).json({user:user})
 })
 app.use("/api/users", userRoute);
 app.use("/api/auth", authRoute);
